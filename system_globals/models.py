@@ -38,9 +38,12 @@ class SytemGlobalManager(models.Manager):
     
     def set(self, var_name, value):
         """
-        Make a atomic query for set a new value for a existent SystemGlobal.
+        Make a atomic query for set a new value for a existent SystemGlobal, or
+        create the new variable and set the new value.
         """
-        self.filter(var_name=var_name).update(value=value)
+        updated_rows = self.filter(var_name=var_name).update(value=value)
+        if updated_rows is 0:
+            self.create(var_name=var_name, value=value)
 
 class SystemGlobal(models.Model):
     """
@@ -71,9 +74,9 @@ class SystemGlobal(models.Model):
             return float(val)
         elif re.match(r'^\d+$', val):  # int
             return int(val)
-        elif val.lower() in ('true', 't', 'yes'):
+        elif val.lower() in ('true', 't', 'yes', 'y'):
             return True
-        elif val.lower() in ('false', 'f', 'no'):
+        elif val.lower() in ('false', 'f', 'no', 'n'):
             return False
         else:   # must be a string
             return val
