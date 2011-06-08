@@ -56,16 +56,6 @@ class SystemGlobalTest(TestCase):
         assert that(dictionary['TESTING_TWO']).equals('\t t')
         assert that(dictionary['testing_three']).equals('3.0 ')
         
-    def test_as_dict_without_coerce(self):
-        dictionary = SystemGlobal.objects.as_dict(coerce=False)
-        assert that(dictionary).has('testing_one')
-        assert that(dictionary).has('TESTING_TWO')
-        assert that(dictionary).has('testing_three')
-        
-        assert that(dictionary['testing_one']).equals('test value')
-        assert that(dictionary['TESTING_TWO']).equals('\t t')
-        assert that(dictionary['testing_three']).equals('3.0 ')
-        
     def test_as_dict_with_to_lower(self):
         dictionary = SystemGlobal.objects.as_dict(to_lower=True)
         assert that(dictionary).has('testing_one')
