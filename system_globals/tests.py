@@ -71,6 +71,11 @@ class SystemGlobalTest(TestCase):
         assert that(dictionary['testing_three']).equals(3.0)
         
     def test_as_dict_using_cache(self):
+        # Storing the original DEBUG value
+        original_debug = settings.DEBUG
+        
+        # The Django docs says that DEBUG should be set to True for store queries
+        # https://docs.djangoproject.com/en/dev/faq/models/#how-can-i-see-the-raw-sql-queries-django-is-running
         settings.DEBUG = True
         SystemGlobal.objects.as_dict()
         SystemGlobal.objects.as_dict()
@@ -89,7 +94,9 @@ class SystemGlobalTest(TestCase):
         SystemGlobal.objects.as_dict(prefix='Test12', coerce=False)
         
         assert that(connection.queries).len_is(1)
-        settings.DEBUG = False
+        
+        # Restoring the original DEBUG value
+        settings.DEBUG = original_debug 
     
     def test_as_dict_after_set_a_integer(self):
         SystemGlobal.objects.set('TESTING_ONE', 1010)
