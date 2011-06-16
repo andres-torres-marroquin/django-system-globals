@@ -1,5 +1,8 @@
-from django.test import TestCase
 from sure import that
+from django.conf import settings
+from django.core.cache import cache
+from django.db import connection
+from django.test import TestCase
 from system_globals.models import SystemGlobal
 
 class SystemGlobalTest(TestCase):
@@ -10,6 +13,7 @@ class SystemGlobalTest(TestCase):
         self.sg3 = SystemGlobal.objects.create(var_name='testing_three', value='3.0 ')
         
     def tearDown(self):
+        cache.clear()
         self.sg1.delete()
         self.sg2.delete()
         self.sg3.delete()
@@ -66,6 +70,39 @@ class SystemGlobalTest(TestCase):
         assert that(dictionary['testing_two']).equals(True)
         assert that(dictionary['testing_three']).equals(3.0)
         
+    def test_as_dict_using_cache(self):
+        settings.DEBUG = True
+        SystemGlobal.objects.as_dict()
+        SystemGlobal.objects.as_dict()
+        SystemGlobal.objects.as_dict()
+        SystemGlobal.objects.as_dict(prefix='Test01')
+        SystemGlobal.objects.as_dict(prefix='Test02')
+        SystemGlobal.objects.as_dict(prefix='Test03')
+        SystemGlobal.objects.as_dict(prefix='Test04', to_lower=True)
+        SystemGlobal.objects.as_dict(prefix='Test05', to_lower=True)
+        SystemGlobal.objects.as_dict(prefix='Test06', to_lower=True)
+        SystemGlobal.objects.as_dict(prefix='Test07', to_lower=True, coerce=False)
+        SystemGlobal.objects.as_dict(prefix='Test08', to_lower=True, coerce=False)
+        SystemGlobal.objects.as_dict(prefix='Test09', to_lower=True, coerce=False)
+        SystemGlobal.objects.as_dict(prefix='Test10', coerce=False)
+        SystemGlobal.objects.as_dict(prefix='Test11', coerce=False)
+        SystemGlobal.objects.as_dict(prefix='Test12', coerce=False)
+        
+        assert that(connection.queries).len_is(1)
+        settings.DEBUG = False
+    
+    def test_as_dict_after_set_a_integer(self):
+        SystemGlobal.objects.set('TESTING_ONE', 1010)
+        SystemGlobal.objects.as_dict()
+        
+    def test_as_dict_after_set_a_float(self):
+        SystemGlobal.objects.set('TESTING_ONE', 3.1416)
+        SystemGlobal.objects.as_dict()
+        
+    def test_as_dict_after_set_a_boolean(self):
+        SystemGlobal.objects.set('TESTING_ONE', True)
+        SystemGlobal.objects.as_dict()
+        
     def test_set(self):
         SystemGlobal.objects.set('TESTING_TWO', ' SystemGlobals Testing\n')
         value = SystemGlobal.objects.get_value('TESTING_TWO')
@@ -75,8 +112,13 @@ class SystemGlobalTest(TestCase):
         value = SystemGlobal.objects.get_value('TESTING_four')
         assert that(value).equals('SystemGlobals new Testing')
         
+        SystemGlobal.objects.set('TESTING_five', 123)
+        value = SystemGlobal.objects.get_value('TESTING_five')
+        assert that(value).equals(123)
+        
         # TearDown
         SystemGlobal.objects.filter(var_name='TESTING_four').delete()
+        SystemGlobal.objects.filter(var_name='TESTING_five').delete()
         
     def test_get_value(self):
         value = SystemGlobal.objects.get_value('TESTING_TWO')

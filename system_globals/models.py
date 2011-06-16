@@ -1,4 +1,5 @@
 import re
+from django.core.cache import cache
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -8,7 +9,12 @@ class SytemGlobalManager(models.Manager):
         """
         Given a variable name, returns SystemGlobal coerced value.
         """
-        return self.get(var_name=var_name).coerced_value()
+        cached_dict = self._get_dict()
+        if cached_dict.has_key(var_name):
+            value = cached_dict.get(var_name)
+            return SystemGlobal.coerce(str(value))
+
+        raise SystemGlobal.DoesNotExist('%s was not set in SystemGlobals.' % var_name)
     
     def as_dict(self, prefix='', to_lower=False, coerce=True):
         """
@@ -18,24 +24,19 @@ class SytemGlobalManager(models.Manager):
 
         If to_lower parameter is set to True the dict keys would be lowercase.
         """
-        if prefix:
-            system_globals = self.filter(var_name__istartswith=prefix)
-            prefix_len = len(prefix)
-        else:
-            system_globals = self.all()
-            prefix_len = 0
+        cached_dict = self._get_dict()
 
-        system_globals = system_globals.values('var_name', 'value')
-        value_dict = {}
-        for system_global in system_globals:
-            var_name = system_global['var_name']
-            value = system_global['value']
-            var_name = var_name.lower() if to_lower else var_name
-            var_name = var_name[prefix_len:]
-            value_dict[var_name] = SystemGlobal.coerce(value) if coerce else value
+        result_dict = {}
+        prefix_len = len(prefix)
+        for key in cached_dict.keys():
+            if key.lower().startswith(prefix.lower()):
+                value = str(cached_dict[key])
+                key = key.lower() if to_lower else key
+                key = key[prefix_len:]
+                result_dict[key] = SystemGlobal.coerce(value) if coerce else value
+            
+        return result_dict
 
-        return dict([(str(k), v) for k, v in value_dict.items()])
-    
     def set(self, var_name, value):
         """
         Make a atomic query for set a new value for a existent SystemGlobal, or
@@ -44,6 +45,29 @@ class SytemGlobalManager(models.Manager):
         updated_rows = self.filter(var_name=var_name).update(value=value)
         if updated_rows is 0:
             self.create(var_name=var_name, value=value)
+
+        cached_dict = self._get_dict()
+        cached_dict[var_name] = value
+        cache.set('SystemGlobals', cached_dict)
+        
+    
+    def _get_dict(self):
+        cached_dict = cache.get('SystemGlobals')
+        if cached_dict is not None:
+            return cached_dict
+        return self._update_dict_from_db()
+
+    def _update_dict_from_db(self):
+        system_globals = self.all().values('var_name', 'value')
+        dictionary = {}
+        for system_global in system_globals:
+            var_name = system_global['var_name']
+            value = system_global['value']
+            dictionary[var_name] = value 
+
+        dictionary =  dict([(str(k), v) for k, v in dictionary.items()])
+        cache.set('SystemGlobals', dictionary)
+        return dictionary
 
 class SystemGlobal(models.Model):
     """
