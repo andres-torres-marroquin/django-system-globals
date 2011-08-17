@@ -2,9 +2,27 @@ import re
 from django.core.cache import cache
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.signals import post_save
+
+
+class SystemGlobalQuerySet(models.query.QuerySet):
+    """QuerySet implementation that refreshes the cache on update."""
+    def update(self, **kwargs):
+        super(SystemGlobalQuerySet, self).update(**kwargs)
+
+        if 'value' in kwargs:
+            for var_name in self.values_list('var_name', flat=True):
+                SystemGlobal.objects._update_cache(var_name, kwargs['value'])
+
 
 class SytemGlobalManager(models.Manager):
-    
+    """
+    Manager for the SystemGlobal class, with
+    helper methods and cache management.
+    """
+    def get_query_set(self):
+        return SystemGlobalQuerySet(SystemGlobal)
+
     def get_value(self, var_name):
         """
         Given a variable name, returns SystemGlobal coerced value.
@@ -15,7 +33,7 @@ class SytemGlobalManager(models.Manager):
             return SystemGlobal.coerce(str(value))
 
         raise SystemGlobal.DoesNotExist('%s was not set in SystemGlobals.' % var_name)
-    
+
     def as_dict(self, prefix='', to_lower=False, coerce=True):
         """
         Given a prefix, searches all the SystemGlobals which starts with that
@@ -34,7 +52,7 @@ class SytemGlobalManager(models.Manager):
                 key = key.lower() if to_lower else key
                 key = key[prefix_len:]
                 result_dict[key] = SystemGlobal.coerce(value) if coerce else value
-            
+
         return result_dict
 
     def set(self, var_name, value):
@@ -46,11 +64,13 @@ class SytemGlobalManager(models.Manager):
         if updated_rows is 0:
             self.create(var_name=var_name, value=value)
 
+        self._update_cache(var_name, value)
+
+    def _update_cache(self, var_name, value):
         cached_dict = self._get_dict()
         cached_dict[var_name] = value
         cache.set('SystemGlobals', cached_dict)
-        
-    
+
     def _get_dict(self):
         cached_dict = cache.get('SystemGlobals')
         if cached_dict is not None:
@@ -63,11 +83,12 @@ class SytemGlobalManager(models.Manager):
         for system_global in system_globals:
             var_name = system_global['var_name']
             value = system_global['value']
-            dictionary[var_name] = value 
+            dictionary[var_name] = value
 
         dictionary =  dict([(str(k), v) for k, v in dictionary.items()])
         cache.set('SystemGlobals', dictionary)
         return dictionary
+
 
 class SystemGlobal(models.Model):
     """
@@ -104,3 +125,9 @@ class SystemGlobal(models.Model):
             return False
         else:   # must be a string
             return val
+
+
+def update_cached_global(sender, instance, **kwargs):
+    SystemGlobal.objects._update_cache(instance.var_name, instance.value)
+
+post_save.connect(update_cached_global, sender=SystemGlobal, dispatch_uid="update_cached_global")

@@ -179,4 +179,14 @@ class SystemGlobalTest(TestCase):
         # String
         coerced_value = SystemGlobal.coerce(' value ')
         assert that(coerced_value).equals('value')
-    
+
+    def test_stale_cache(self):
+        self.assertEqual(SystemGlobal.objects.get_value('testing_one'), 'test value')
+
+        one = SystemGlobal.objects.get(var_name='testing_one')
+        one.value = 'test2 value'
+        one.save()
+        self.assertEqual(SystemGlobal.objects.get_value('testing_one'), 'test2 value')
+
+        SystemGlobal.objects.filter(var_name='testing_one').update(value='test3 value')
+        self.assertEqual(SystemGlobal.objects.get_value('testing_one'), 'test3 value')
