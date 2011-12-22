@@ -3,4 +3,10 @@
 .pydevproject
 build/
 dist/
+include/
+bin/
+lib/
+.DS_Store
+.Python
+db.sqlite
 django_system_globals.egg-info/

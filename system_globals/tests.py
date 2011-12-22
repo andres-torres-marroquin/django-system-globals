@@ -1,4 +1,3 @@
-from sure import that
 from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
@@ -20,55 +19,55 @@ class SystemGlobalTest(TestCase):
         
     def test_as_dict_with_prefix(self):
         dictionary = SystemGlobal.objects.as_dict(prefix='testing_')
-        assert that(dictionary).has('one')
-        assert that(dictionary).has('TWO')
-        assert that(dictionary).has('three')
+        self.assertTrue('one' in dictionary)
+        self.assertTrue('TWO' in dictionary)
+        self.assertTrue('three' in dictionary)
         
-        assert that(dictionary['one']).equals('test value')
-        assert that(dictionary['TWO']).equals(True)
-        assert that(dictionary['three']).equals(3.0)
+        self.assertEqual(dictionary['one'], 'test value')
+        self.assertEqual(dictionary['TWO'], True)
+        self.assertEqual(dictionary['three'], 3.0)
         
         dictionary = SystemGlobal.objects.as_dict(prefix='teSTinG_')
-        assert that(dictionary).has('one')
-        assert that(dictionary).has('TWO')
-        assert that(dictionary).has('three')
+        self.assertTrue('one' in dictionary)
+        self.assertTrue('TWO' in dictionary)
+        self.assertTrue('three' in dictionary)
         
-        assert that(dictionary['one']).equals('test value')
-        assert that(dictionary['TWO']).equals(True)
-        assert that(dictionary['three']).equals(3.0)
+        self.assertEqual(dictionary['one'], 'test value')
+        self.assertEqual(dictionary['TWO'], True)
+        self.assertEqual(dictionary['three'], 3.0)
         
         dictionary = SystemGlobal.objects.as_dict(prefix='non_existent')
-        assert that(dictionary).equals({})
+        self.assertEqual(dictionary, {})
         
     def test_as_dict_without_prefix(self):
         dictionary = SystemGlobal.objects.as_dict()
-        assert that(dictionary).has('testing_one')
-        assert that(dictionary).has('TESTING_TWO')
-        assert that(dictionary).has('testing_three')
-        
-        assert that(dictionary['testing_one']).equals('test value')
-        assert that(dictionary['TESTING_TWO']).equals(True)
-        assert that(dictionary['testing_three']).equals(3.0)
+        self.assertTrue('testing_one' in dictionary)
+        self.assertTrue('TESTING_TWO' in dictionary)
+        self.assertTrue('testing_three' in dictionary)
+
+        self.assertEqual(dictionary['testing_one'], 'test value')
+        self.assertEqual(dictionary['TESTING_TWO'], True)
+        self.assertEqual(dictionary['testing_three'], 3.0)
     
     def test_as_dict_without_coerce(self):
         dictionary = SystemGlobal.objects.as_dict(coerce=False)
-        assert that(dictionary).has('testing_one')
-        assert that(dictionary).has('TESTING_TWO')
-        assert that(dictionary).has('testing_three')
+        self.assertTrue('testing_one' in dictionary)
+        self.assertTrue('TESTING_TWO' in dictionary)
+        self.assertTrue('testing_three' in dictionary)
         
-        assert that(dictionary['testing_one']).equals('test value')
-        assert that(dictionary['TESTING_TWO']).equals('\t t')
-        assert that(dictionary['testing_three']).equals('3.0 ')
+        self.assertEqual(dictionary['testing_one'], 'test value')
+        self.assertEqual(dictionary['TESTING_TWO'], '\t t')
+        self.assertEqual(dictionary['testing_three'], '3.0 ')
         
     def test_as_dict_with_to_lower(self):
         dictionary = SystemGlobal.objects.as_dict(to_lower=True)
-        assert that(dictionary).has('testing_one')
-        assert that(dictionary).has('testing_two')
-        assert that(dictionary).has('testing_three')
-        
-        assert that(dictionary['testing_one']).equals('test value')
-        assert that(dictionary['testing_two']).equals(True)
-        assert that(dictionary['testing_three']).equals(3.0)
+        self.assertTrue('testing_one' in dictionary)
+        self.assertTrue('testing_two' in dictionary)
+        self.assertTrue('testing_three' in dictionary)
+
+        self.assertEqual(dictionary['testing_one'], 'test value')
+        self.assertEqual(dictionary['testing_two'], True)
+        self.assertEqual(dictionary['testing_three'], 3.0)
         
     def test_as_dict_using_cache(self):
         # Storing the original DEBUG value
@@ -93,7 +92,7 @@ class SystemGlobalTest(TestCase):
         SystemGlobal.objects.as_dict(prefix='Test11', coerce=False)
         SystemGlobal.objects.as_dict(prefix='Test12', coerce=False)
         
-        assert that(connection.queries).len_is(1)
+        self.assertEqual(len(connection.queries), 0)
         
         # Restoring the original DEBUG value
         settings.DEBUG = original_debug 
@@ -113,15 +112,15 @@ class SystemGlobalTest(TestCase):
     def test_set(self):
         SystemGlobal.objects.set('TESTING_TWO', ' SystemGlobals Testing\n')
         value = SystemGlobal.objects.get_value('TESTING_TWO')
-        assert that(value).equals('SystemGlobals Testing')
+        self.assertEquals(value, 'SystemGlobals Testing')
         
         SystemGlobal.objects.set('TESTING_four', ' SystemGlobals new Testing\n')
         value = SystemGlobal.objects.get_value('TESTING_four')
-        assert that(value).equals('SystemGlobals new Testing')
+        self.assertEquals(value, 'SystemGlobals new Testing')
         
         SystemGlobal.objects.set('TESTING_five', 123)
         value = SystemGlobal.objects.get_value('TESTING_five')
-        assert that(value).equals(123)
+        self.assertEquals(value, 123)
         
         # TearDown
         SystemGlobal.objects.filter(var_name='TESTING_four').delete()
@@ -129,10 +128,10 @@ class SystemGlobalTest(TestCase):
         
     def test_get_value(self):
         value = SystemGlobal.objects.get_value('TESTING_TWO')
-        assert that(value).equals(True)
+        self.assertEquals(value, True)
         
         value = SystemGlobal.objects.get_value('testing_three')
-        assert that(value).equals(3.0)
+        self.assertEquals(value, 3.0)
     
     def test_coerce(self):
         """
@@ -141,44 +140,44 @@ class SystemGlobalTest(TestCase):
         
         # Float
         coerced_value = SystemGlobal.coerce('1.0')
-        assert that(coerced_value).equals(1.0)
+        self.assertEquals(coerced_value, 1.0)
         
         coerced_value = SystemGlobal.coerce('3.33')
-        assert that(coerced_value).equals(3.33)
+        self.assertEquals(coerced_value, 3.33)
         
         # Int
         coerced_value = SystemGlobal.coerce(' 3 ')
-        assert that(coerced_value).equals(3)
+        self.assertEquals(coerced_value, 3)
         
         # True
         coerced_value = SystemGlobal.coerce(' true ')
-        assert that(coerced_value).equals(True)
+        self.assertEquals(coerced_value, True)
         
         coerced_value = SystemGlobal.coerce('\n yEs ')
-        assert that(coerced_value).equals(True)
+        self.assertEquals(coerced_value, True)
         
         coerced_value = SystemGlobal.coerce('\n Y \t')
-        assert that(coerced_value).equals(True)
+        self.assertEquals(coerced_value, True)
         
         coerced_value = SystemGlobal.coerce('t')
-        assert that(coerced_value).equals(True)
+        self.assertEquals(coerced_value, True)
         
         # False
         coerced_value = SystemGlobal.coerce(' faLse ')
-        assert that(coerced_value).equals(False)
+        self.assertEquals(coerced_value, False)
         
         coerced_value = SystemGlobal.coerce(' no ')
-        assert that(coerced_value).equals(False)
+        self.assertEquals(coerced_value, False)
         
         coerced_value = SystemGlobal.coerce('\t\tn\n\n')
-        assert that(coerced_value).equals(False)
+        self.assertEquals(coerced_value, False)
         
         coerced_value = SystemGlobal.coerce('F')
-        assert that(coerced_value).equals(False)
+        self.assertEquals(coerced_value, False)
         
         # String
         coerced_value = SystemGlobal.coerce(' value ')
-        assert that(coerced_value).equals('value')
+        self.assertEquals(coerced_value, 'value')
 
     def test_stale_cache(self):
         self.assertEqual(SystemGlobal.objects.get_value('testing_one'), 'test value')
