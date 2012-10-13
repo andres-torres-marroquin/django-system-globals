@@ -8,11 +8,13 @@ from django.db.models.signals import post_save
 class SystemGlobalQuerySet(models.query.QuerySet):
     """QuerySet implementation that refreshes the cache on update."""
     def update(self, **kwargs):
-        super(SystemGlobalQuerySet, self).update(**kwargs)
+        updated_rows = super(SystemGlobalQuerySet, self).update(**kwargs)
 
         if 'value' in kwargs:
             for var_name in self.values_list('var_name', flat=True):
                 SystemGlobal.objects._update_cache(var_name, kwargs['value'])
+
+        return updated_rows
 
 
 class SytemGlobalManager(models.Manager):
@@ -85,7 +87,7 @@ class SytemGlobalManager(models.Manager):
             value = system_global['value']
             dictionary[var_name] = value
 
-        dictionary =  dict([(str(k), v) for k, v in dictionary.items()])
+        dictionary = dict([(str(k), v) for k, v in dictionary.items()])
         cache.set('SystemGlobals', dictionary)
         return dictionary
 
@@ -97,18 +99,18 @@ class SystemGlobal(models.Model):
     var_name = models.CharField(_(u'variable name'), max_length=100, unique=True)
     value = models.TextField(_(u'value'))
     description = models.TextField(_(u'description'), blank=True)
-    
+
     objects = SytemGlobalManager()
-    
+
     class Meta:
         verbose_name_plural = _(u'System Globals')
-        
+
     def __unicode__(self):
         return "%s = %s" % (self.var_name, self.value)
-    
+
     def coerced_value(self):
         return self.coerce(self.value)
-    
+
     @staticmethod
     def coerce(raw_value):
         """
