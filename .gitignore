@@ -10,3 +10,4 @@ lib/
 .Python
 db.sqlite
 django_system_globals.egg-info/
+.tox/
