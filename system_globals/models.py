@@ -1,8 +1,10 @@
 import re
+
+import django
 from django.core.cache import cache
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
 from django.db.models.signals import post_save
+from django.utils.translation import ugettext_lazy as _
 
 
 class SystemGlobalQuerySet(models.query.QuerySet):
@@ -22,15 +24,18 @@ class SytemGlobalManager(models.Manager):
     Manager for the SystemGlobal class, with
     helper methods and cache management.
     """
-    def get_query_set(self):
+    def get_queryset(self):
         return SystemGlobalQuerySet(SystemGlobal)
+
+    if django.VERSION < (1, 6):
+        get_query_set = get_queryset
 
     def get_value(self, var_name):
         """
         Given a variable name, returns SystemGlobal coerced value.
         """
         cached_dict = self._get_dict()
-        if cached_dict.has_key(var_name):
+        if var_name in cached_dict:
             value = cached_dict.get(var_name)
             return SystemGlobal.coerce(str(value))
 
