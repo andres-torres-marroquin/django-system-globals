@@ -1,5 +1,5 @@
 # django-system-globals
-> Version 0.0.3
+> Version 0.0.4
 
 # What
 
@@ -60,5 +60,3 @@ additionally you can add it to TEMPLATE_CONTEXT_PROCESSORS
 
     >>> SystemGlobal.objects.as_dict(prefix='math_')
     {'PI': 3.1416, 'E': 2.7182}
-    
-    
