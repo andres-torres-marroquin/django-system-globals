@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/andres-torres-marroquin/django-system-globals.svg?branch=master)](https://travis-ci.org/andres-torres-marroquin/django-system-globals)
 
 # django-system-globals
-> Version 0.0.4
+> Version 0.0.5
 
 # What
 

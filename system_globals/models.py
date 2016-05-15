@@ -68,7 +68,7 @@ class SytemGlobalManager(models.Manager):
         create the new variable and set the new value.
         """
         updated_rows = self.filter(var_name=var_name).update(value=value)
-        if updated_rows is 0:
+        if not updated_rows:
             self.create(var_name=var_name, value=value)
 
         self._update_cache(var_name, value)
